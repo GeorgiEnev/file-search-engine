@@ -1,5 +1,6 @@
 ﻿Console.Write("Enter a directory path: ");
 string? path = Console.ReadLine();
+path = NormalizeDirectoryPath(path);
 
 if (string.IsNullOrWhiteSpace(path) || !Directory.Exists(path))
 {
@@ -121,6 +122,23 @@ static int CountMatches(string text, string searchText)
 static string FormatPlural(int count)
 {
     return count == 1 ? "" : "es";
+}
+
+static string? NormalizeDirectoryPath(string? path)
+{
+    if (string.IsNullOrWhiteSpace(path))
+    {
+        return path;
+    }
+
+    path = path.Trim();
+
+    if (path.Length == 2 && char.IsLetter(path[0]) && path[1] == ':')
+    {
+        return path + Path.DirectorySeparatorChar;
+    }
+
+    return path;
 }
 
 static string CreateSnippet(string text, string searchText)
