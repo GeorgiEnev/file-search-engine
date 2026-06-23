@@ -94,7 +94,9 @@ Parallel.ForEach(files, file =>
         foreach (var match in matches)
         {
             Console.WriteLine($"  Line {match.LineNumber} ({match.MatchCount} match{FormatPlural(match.MatchCount)}):");
-            Console.WriteLine($"    {match.Snippet}");
+            Console.Write("    ");
+            WriteHighlightedText(match.Snippet, input);
+            Console.WriteLine();
         }
     }
 });
@@ -176,4 +178,28 @@ static string CreateSnippet(string text, string searchText)
     string suffix = end < text.Length ? "..." : "";
 
     return $"{prefix}{text[start..end].Trim()}{suffix}";
+}
+
+static void WriteHighlightedText(string text, string searchText)
+{
+    int index = 0;
+    ConsoleColor originalColor = Console.ForegroundColor;
+
+    while (index < text.Length)
+    {
+        int matchIndex = text.IndexOf(searchText, index, StringComparison.OrdinalIgnoreCase);
+
+        if (matchIndex < 0)
+        {
+            Console.Write(text[index..]);
+            break;
+        }
+
+        Console.Write(text[index..matchIndex]);
+        Console.ForegroundColor = ConsoleColor.Yellow;
+        Console.Write(text.AsSpan(matchIndex, searchText.Length));
+        Console.ForegroundColor = originalColor;
+
+        index = matchIndex + searchText.Length;
+    }
 }
