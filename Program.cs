@@ -150,7 +150,7 @@ static string? NormalizeDirectoryPath(string? path)
         return path;
     }
 
-    path = path.Trim();
+    path = path.Trim().Trim('"', '\'');
 
     if (path.Length == 2 && char.IsLetter(path[0]) && path[1] == ':')
     {
