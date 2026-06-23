@@ -10,7 +10,7 @@ The app asks for a directory path and search text, then scans supported text-bas
 - Scans subdirectories
 - Skips inaccessible files and folders
 - Ignores non-text formats
-- Shows matching files, line numbers, snippets, and total matches
+- Shows matching files, line numbers, snippets, total matches, and search time
 - Searches case-insensitively
 
 ## Supported File Types
@@ -58,5 +58,5 @@ Search summary
 --------------
 Files with matches: 1
 Total matches: 2
+Search time: 0.042 seconds
 ```
-
