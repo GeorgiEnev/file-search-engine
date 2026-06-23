@@ -1,11 +1,4 @@
-﻿Console.Write("Enter a directory path: ");
-string? path = Console.ReadLine();
-path = NormalizeDirectoryPath(path);
-
-if (string.IsNullOrWhiteSpace(path) || !Directory.Exists(path))
-{
-    throw new DirectoryNotFoundException($"Directory does not exist: {path}");
-}
+﻿string path = ReadValidDirectoryPath();
 
 Console.Write("Enter text to search: ");
 string? input = Console.ReadLine();
@@ -122,6 +115,22 @@ static int CountMatches(string text, string searchText)
 static string FormatPlural(int count)
 {
     return count == 1 ? "" : "es";
+}
+
+static string ReadValidDirectoryPath()
+{
+    while (true)
+    {
+        Console.Write("Enter a directory path: ");
+        string? path = NormalizeDirectoryPath(Console.ReadLine());
+
+        if (!string.IsNullOrWhiteSpace(path) && Directory.Exists(path))
+        {
+            return path;
+        }
+
+        Console.WriteLine("Directory does not exist. Please try again.");
+    }
 }
 
 static string? NormalizeDirectoryPath(string? path)
