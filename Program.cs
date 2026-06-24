@@ -304,6 +304,8 @@ static int FindWholeTextMatch(string text, string searchText, int startIndex)
     return -1;
 }
 
+// Prevents partial matches. 
+// Example "pawn" does not match inside "spawn" or "pawned".
 static bool HasWordBoundary(string text, int matchIndex, int matchLength)
 {
     int beforeIndex = matchIndex - 1;
