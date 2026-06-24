@@ -1,14 +1,5 @@
 ﻿string path = ReadValidDirectoryPath();
-
-Console.Write("Enter text to search: ");
-string? input = Console.ReadLine();
-
-if (string.IsNullOrWhiteSpace(input))
-{
-    throw new ArgumentException("Search text cannot be empty.", nameof(input));
-}
-
-input = input.Trim();
+string input = ReadValidSearchText();
 
 var options = new EnumerationOptions
 {
@@ -220,6 +211,22 @@ static string ReadValidDirectoryPath()
         }
 
         Console.WriteLine("Directory does not exist. Please try again.");
+    }
+}
+
+static string ReadValidSearchText()
+{
+    while (true)
+    {
+        Console.Write("Enter text to search: ");
+        string? input = Console.ReadLine();
+
+        if (!string.IsNullOrWhiteSpace(input))
+        {
+            return input.Trim();
+        }
+
+        Console.WriteLine("Search text cannot be empty. Please try again.");
     }
 }
 
