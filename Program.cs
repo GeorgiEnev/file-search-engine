@@ -141,7 +141,7 @@ static int CountMatches(string text, string searchText)
     int count = 0;
     int index = 0;
 
-    while ((index = text.IndexOf(searchText, index, StringComparison.OrdinalIgnoreCase)) >= 0)
+    while ((index = FindWholeTextMatch(text, searchText, index)) >= 0)
     {
         count++;
         index += searchText.Length;
@@ -253,7 +253,7 @@ static string? NormalizeDirectoryPath(string? path)
 static string CreateSnippet(string text, string searchText)
 {
     const int contextLength = 40;
-    int matchIndex = text.IndexOf(searchText, StringComparison.OrdinalIgnoreCase);
+    int matchIndex = FindWholeTextMatch(text, searchText, 0);
 
     if (matchIndex < 0)
     {
@@ -268,6 +268,39 @@ static string CreateSnippet(string text, string searchText)
     return $"{prefix}{text[start..end].Trim()}{suffix}";
 }
 
+static int FindWholeTextMatch(string text, string searchText, int startIndex)
+{
+    int index = startIndex;
+
+    while ((index = text.IndexOf(searchText, index, StringComparison.OrdinalIgnoreCase)) >= 0)
+    {
+        if (HasWordBoundary(text, index, searchText.Length))
+        {
+            return index;
+        }
+
+        index += searchText.Length;
+    }
+
+    return -1;
+}
+
+static bool HasWordBoundary(string text, int matchIndex, int matchLength)
+{
+    int beforeIndex = matchIndex - 1;
+    int afterIndex = matchIndex + matchLength;
+
+    bool startsAtWordBoundary = beforeIndex < 0 || !IsWordCharacter(text[beforeIndex]);
+    bool endsAtWordBoundary = afterIndex >= text.Length || !IsWordCharacter(text[afterIndex]);
+
+    return startsAtWordBoundary && endsAtWordBoundary;
+}
+
+static bool IsWordCharacter(char character)
+{
+    return char.IsLetterOrDigit(character) || character == '_';
+}
+
 static void WriteHighlightedText(string text, string searchText)
 {
     int index = 0;
@@ -275,7 +308,7 @@ static void WriteHighlightedText(string text, string searchText)
 
     while (index < text.Length)
     {
-        int matchIndex = text.IndexOf(searchText, index, StringComparison.OrdinalIgnoreCase);
+        int matchIndex = FindWholeTextMatch(text, searchText, index);
 
         if (matchIndex < 0)
         {
