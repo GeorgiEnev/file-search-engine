@@ -12,11 +12,43 @@ input = input.Trim();
 
 var options = new EnumerationOptions
 {
-    RecurseSubdirectories = true,
     IgnoreInaccessible = true
 };
 
-var files = Directory.EnumerateFiles(path, searchPattern: "*", options);
+var skippedDirectories = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+{
+    ".cache",
+    ".gradle",
+    ".git",
+    ".github",
+    ".idea",
+    ".next",
+    ".nuget",
+    ".pnpm-store",
+    ".pytest_cache",
+    ".svn",
+    ".turbo",
+    ".vscode",
+    ".vs",
+    "__pycache__",
+    "bin",
+    "bower_components",
+    "build",
+    "coverage",
+    "debug",
+    "dist",
+    "logs",
+    "obj",
+    "node_modules",
+    "out",
+    "packages",
+    "release",
+    "target",
+    "temp",
+    "tmp",
+    "vendor"
+};
+var files = EnumerateSearchFiles(path, options, skippedDirectories);
 var textExtensions = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
 {
     ".txt",
@@ -127,6 +159,52 @@ static int CountMatches(string text, string searchText)
 static string FormatPlural(int count)
 {
     return count == 1 ? "" : "es";
+}
+
+static IEnumerable<string> EnumerateSearchFiles(
+    string rootPath,
+    EnumerationOptions options,
+    HashSet<string> skippedDirectories)
+{
+    var directories = new Stack<string>();
+    directories.Push(rootPath);
+
+    while (directories.Count > 0)
+    {
+        string currentDirectory = directories.Pop();
+
+        IEnumerable<string> files;
+        IEnumerable<string> childDirectories;
+
+        try
+        {
+            files = Directory.EnumerateFiles(currentDirectory, "*", options);
+            childDirectories = Directory.EnumerateDirectories(currentDirectory, "*", options);
+        }
+        catch (UnauthorizedAccessException)
+        {
+            continue;
+        }
+        catch (IOException)
+        {
+            continue;
+        }
+
+        foreach (var file in files)
+        {
+            yield return file;
+        }
+
+        foreach (var childDirectory in childDirectories)
+        {
+            string directoryName = Path.GetFileName(childDirectory);
+
+            if (!skippedDirectories.Contains(directoryName))
+            {
+                directories.Push(childDirectory);
+            }
+        }
+    }
 }
 
 static string ReadValidDirectoryPath()
