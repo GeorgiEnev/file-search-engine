@@ -132,6 +132,9 @@ Console.WriteLine("--------------");
 Console.WriteLine($"Files with matches: {filesWithMatches}");
 Console.WriteLine($"Total matches: {totalMatchesFound}");
 Console.WriteLine($"Search time: {stopwatch.Elapsed.TotalSeconds:0.000} seconds");
+Console.WriteLine();
+Console.WriteLine("Press any key to exit...");
+Console.ReadKey();
 
 static int CountMatches(string text, string searchText)
 {
