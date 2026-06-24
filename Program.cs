@@ -1,6 +1,4 @@
 ﻿string path = ReadValidDirectoryPath();
-string input = ReadValidSearchText();
-
 var options = new EnumerationOptions
 {
     IgnoreInaccessible = true
@@ -39,7 +37,6 @@ var skippedDirectories = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
     "tmp",
     "vendor"
 };
-var files = EnumerateSearchFiles(path, options, skippedDirectories);
 var textExtensions = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
 {
     ".txt",
@@ -57,81 +54,93 @@ var textExtensions = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
     ".config",
     ".log"
 };
-int totalMatchesFound = 0;
-int filesWithMatches = 0;
-object consoleLock = new();
-var stopwatch = System.Diagnostics.Stopwatch.StartNew();
 
-Parallel.ForEach(files, file =>
+while (true)
 {
-    if (!textExtensions.Contains(Path.GetExtension(file)))
-    {
-        return;
-    }
+    string input = ReadValidSearchText();
+    var files = EnumerateSearchFiles(path, options, skippedDirectories);
+    int totalMatchesFound = 0;
+    int filesWithMatches = 0;
+    object consoleLock = new();
+    var stopwatch = System.Diagnostics.Stopwatch.StartNew();
 
-    var matches = new List<(int LineNumber, int MatchCount, string Snippet)>();
-    int lineNumber = 0;
-
-    try
+    Parallel.ForEach(files, file =>
     {
-        foreach (var line in File.ReadLines(file))
+        if (!textExtensions.Contains(Path.GetExtension(file)))
         {
-            lineNumber++;
-            int matchCount = CountMatches(line, input);
+            return;
+        }
 
-            if (matchCount > 0)
+        var matches = new List<(int LineNumber, int MatchCount, string Snippet)>();
+        int lineNumber = 0;
+
+        try
+        {
+            foreach (var line in File.ReadLines(file))
             {
-                string snippet = CreateSnippet(line, input);
-                matches.Add((lineNumber, matchCount, snippet));
+                lineNumber++;
+                int matchCount = CountMatches(line, input);
+
+                if (matchCount > 0)
+                {
+                    string snippet = CreateSnippet(line, input);
+                    matches.Add((lineNumber, matchCount, snippet));
+                }
             }
         }
-    }
-    catch (UnauthorizedAccessException)
-    {
-        return;
-    }
-    catch (IOException)
-    {
-        return;
-    }
-
-    if (matches.Count == 0)
-    {
-        return;
-    }
-
-    int totalMatches = matches.Sum(match => match.MatchCount);
-
-    lock (consoleLock)
-    {
-        totalMatchesFound += totalMatches;
-        filesWithMatches++;
-
-        Console.WriteLine();
-        Console.WriteLine($"Directory: {Path.GetDirectoryName(file)}");
-        Console.WriteLine($"File:      {Path.GetFileName(file)}");
-        Console.WriteLine(new string('-', 80));
-        Console.WriteLine($"Matches: {totalMatches}");
-        Console.WriteLine("Lines:");
-
-        foreach (var match in matches)
+        catch (UnauthorizedAccessException)
         {
-            Console.WriteLine($"  Line {match.LineNumber} ({match.MatchCount} match{FormatPlural(match.MatchCount)}):");
-            Console.Write("    ");
-            WriteHighlightedText(match.Snippet, input);
-            Console.WriteLine();
+            return;
         }
+        catch (IOException)
+        {
+            return;
+        }
+
+        if (matches.Count == 0)
+        {
+            return;
+        }
+
+        int totalMatches = matches.Sum(match => match.MatchCount);
+
+        lock (consoleLock)
+        {
+            totalMatchesFound += totalMatches;
+            filesWithMatches++;
+
+            Console.WriteLine();
+            Console.WriteLine($"Directory: {Path.GetDirectoryName(file)}");
+            Console.WriteLine($"File:      {Path.GetFileName(file)}");
+            Console.WriteLine(new string('-', 80));
+            Console.WriteLine($"Matches: {totalMatches}");
+            Console.WriteLine("Lines:");
+
+            foreach (var match in matches)
+            {
+                Console.WriteLine($"  Line {match.LineNumber} ({match.MatchCount} match{FormatPlural(match.MatchCount)}):");
+                Console.Write("    ");
+                WriteHighlightedText(match.Snippet, input);
+                Console.WriteLine();
+            }
+        }
+    });
+
+    stopwatch.Stop();
+
+    Console.WriteLine();
+    Console.WriteLine("Search summary");
+    Console.WriteLine("--------------");
+    Console.WriteLine($"Files with matches: {filesWithMatches}");
+    Console.WriteLine($"Total matches: {totalMatchesFound}");
+    Console.WriteLine($"Search time: {stopwatch.Elapsed.TotalSeconds:0.000} seconds");
+
+    if (!ShouldSearchAgain())
+    {
+        break;
     }
-});
+}
 
-stopwatch.Stop();
-
-Console.WriteLine();
-Console.WriteLine("Search summary");
-Console.WriteLine("--------------");
-Console.WriteLine($"Files with matches: {filesWithMatches}");
-Console.WriteLine($"Total matches: {totalMatchesFound}");
-Console.WriteLine($"Search time: {stopwatch.Elapsed.TotalSeconds:0.000} seconds");
 Console.WriteLine();
 Console.WriteLine("Press any key to exit...");
 Console.ReadKey();
@@ -231,6 +240,16 @@ static string ReadValidSearchText()
 
         Console.WriteLine("Search text cannot be empty. Please try again.");
     }
+}
+
+static bool ShouldSearchAgain()
+{
+    Console.WriteLine();
+    Console.Write("Press Enter to search another word, or any other key to exit...");
+    var key = Console.ReadKey(intercept: true);
+    Console.WriteLine();
+
+    return key.Key == ConsoleKey.Enter;
 }
 
 static string? NormalizeDirectoryPath(string? path)
